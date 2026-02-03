@@ -158,7 +158,22 @@ const shipCore = new THREE.Mesh(
 );
 shipCore.position.z = -0.4;
 
-shipGroup.add(shipBody, shipWing, shipCore);
+const trailGroup = new THREE.Group();
+for (let i = 0; i < 8; i += 1) {
+  const trail = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.4, 0.8),
+    new THREE.MeshBasicMaterial({
+      color: 0x26f7ff,
+      transparent: true,
+      opacity: 0.25
+    })
+  );
+  trail.position.set(0, -0.1, -0.6 - i * 0.35);
+  trail.rotation.x = Math.PI / 2;
+  trailGroup.add(trail);
+}
+
+shipGroup.add(shipBody, shipWing, shipCore, trailGroup);
 shipGroup.position.y = -0.4;
 scene.add(shipGroup);
 
@@ -226,6 +241,22 @@ scene.add(hazards);
 
 const particles = new THREE.Group();
 scene.add(particles);
+
+const nebula = new THREE.Group();
+for (let i = 0; i < 12; i += 1) {
+  const cloud = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 6),
+    new THREE.MeshBasicMaterial({
+      color: 0x1b1f3a,
+      transparent: true,
+      opacity: 0.2
+    })
+  );
+  cloud.position.set((Math.random() - 0.5) * 30, Math.random() * 8, -20 - i * 12);
+  cloud.rotation.z = Math.random();
+  nebula.add(cloud);
+}
+scene.add(nebula);
 
 function spawnSurpriseParticles() {
   particles.clear();
@@ -442,6 +473,26 @@ function updateStars(dt) {
   });
 }
 
+function updateNebula(dt) {
+  nebula.children.forEach((cloud) => {
+    cloud.position.z += dt * 6;
+    if (cloud.position.z > 8) {
+      cloud.position.z = -160;
+      cloud.position.x = (Math.random() - 0.5) * 30;
+      cloud.position.y = Math.random() * 8;
+      cloud.rotation.z = Math.random();
+    }
+  });
+}
+
+function updateTrail() {
+  trailGroup.children.forEach((trail, index) => {
+    const baseOpacity = state.boost > 1 ? 0.5 : 0.25;
+    trail.material.opacity = baseOpacity * (1 - index / trailGroup.children.length);
+    trail.material.color.setHex(state.theme.accents[index % 2]);
+  });
+}
+
 function detectCollisions() {
   const shipPos = shipGroup.position;
   const shipRadius = 0.6;
@@ -524,12 +575,16 @@ function animate(time) {
     updateGates(dt);
     updateHazards(dt);
     updateStars(dt);
+    updateNebula(dt);
     updateParticles();
+    updateTrail();
     detectCollisions();
     checkCompletion();
   } else {
     shipGroup.rotation.y += dt * 0.2;
     updateParticles();
+    updateNebula(dt);
+    updateTrail();
   }
 
   if (state.hasHands && performance.now() - state.lastHandSeen > 1000) {
