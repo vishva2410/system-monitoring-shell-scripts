@@ -342,6 +342,7 @@ ui.startBtn.addEventListener("click", () => {
   state.speed = 28;
   state.slowField = 0;
   ui.surprise.classList.add("hidden");
+  ui.surprise.style.display = "none";
   spawnSurpriseParticles();
   setStatus("Rift engaged.");
 });
@@ -349,6 +350,7 @@ ui.startBtn.addEventListener("click", () => {
 ui.replayBtn.addEventListener("click", () => {
   ui.ui.style.display = "grid";
   ui.surprise.classList.add("hidden");
+  ui.surprise.style.display = "none";
   state.running = false;
   setStatus("Ready.");
 });
@@ -392,6 +394,7 @@ window.addEventListener("keyup", (event) => {
 
 setStatus("Ready. Use arrow keys or WASD.");
 ui.surprise.classList.add("hidden");
+ui.surprise.style.display = "none";
 ui.ui.style.display = "grid";
 
 const shipBounds = new THREE.Vector3(2.5, 1.6, 0);
@@ -543,12 +546,14 @@ function checkCompletion() {
   if (state.distance > 1500) {
     state.running = false;
     ui.surprise.classList.remove("hidden");
+    ui.surprise.style.display = "grid";
     ui.boost.classList.remove("active");
     setStatus("Rift complete.");
   }
   if (state.health <= 0) {
     state.running = false;
     ui.surprise.classList.remove("hidden");
+    ui.surprise.style.display = "grid";
     ui.boost.classList.remove("active");
     setStatus("Hull lost. Try again.");
   }
@@ -585,11 +590,6 @@ function animate(time) {
     updateParticles();
     updateNebula(dt);
     updateTrail();
-  }
-
-  if (state.hasHands && performance.now() - state.lastHandSeen > 1000) {
-    state.hasHands = false;
-    setStatus("Hand lost — using mouse.");
   }
 
   renderer.render(scene, camera);

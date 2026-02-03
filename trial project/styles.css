@@ -175,8 +175,8 @@ button:hover {
 }
 
 .hidden {
-  display: none;
-  pointer-events: none;
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .surprise-card {
