@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skyrail Rift — Hand-Tracked Sci‑Fi Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="ui">
+      <div class="panel">
+        <div class="title">Skyrail Rift</div>
+        <div class="subtitle">Hand‑tracked 3D sci‑fi run</div>
+
+        <div class="section">
+          <label>City</label>
+          <div class="row" id="city-options"></div>
+        </div>
+
+        <div class="section">
+          <label>Ship</label>
+          <div class="row" id="ship-options"></div>
+        </div>
+
+        <div class="section">
+          <label>Theme</label>
+          <div class="row" id="theme-options"></div>
+        </div>
+
+        <div class="section">
+          <label>Controls</label>
+          <div class="control-hint">
+            Use arrow keys or WASD to steer. Hold Space to boost.
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="start-btn">Launch</button>
+          <button id="calibrate-btn">Calibrate</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div id="status">Initializing…</div>
+      <div id="meters">0 m</div>
+      <div id="score">Score 0</div>
+      <div id="health">Hull 100%</div>
+      <div id="boost">BOOST</div>
+    </div>
+
+    <div id="surprise" class="hidden">
+      <div class="surprise-card">
+        <div class="surprise-title">Rift Complete</div>
+        <div class="surprise-body">
+          The city lights fold into a living constellation. You just discovered the
+          Skyrail’s secret: every run weaves a new map of the stars.
+        </div>
+        <button id="replay-btn">Run Again</button>
+      </div>
+    </div>
+
+    <div id="damage"></div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
