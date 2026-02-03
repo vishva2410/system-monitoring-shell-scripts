@@ -14,7 +14,6 @@ const ui = {
   ui: document.getElementById("ui"),
   surprise: document.getElementById("surprise"),
   replayBtn: document.getElementById("replay-btn"),
-  video: document.getElementById("input-video"),
   damage: document.getElementById("damage")
 };
 
@@ -46,10 +45,8 @@ const state = {
   health: 100,
   speed: 28,
   boost: 1,
-  target: new THREE.Vector2(0, 0),
-  calibrateOffset: new THREE.Vector2(0, 0),
-  hasHands: false,
-  lastHandSeen: 0,
+  keys: { left: 0, right: 0, up: 0, down: 0, boost: 0 },
+  steer: new THREE.Vector2(0, 0),
   invuln: 0,
   slowField: 0
 };
@@ -326,7 +323,10 @@ ui.replayBtn.addEventListener("click", () => {
 });
 
 ui.calibrateBtn.addEventListener("click", () => {
-  state.calibrateOffset.copy(state.target);
+  state.steer.set(0, 0);
+  shipGroup.position.x = 0;
+  shipGroup.position.y = -0.4;
+  setStatus("Centered.");
 });
 
 window.addEventListener("resize", () => {
@@ -335,86 +335,51 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-let mouseFallback = new THREE.Vector2(0, 0);
-window.addEventListener("mousemove", (event) => {
-  const nx = (event.clientX / window.innerWidth) * 2 - 1;
-  const ny = (event.clientY / window.innerHeight) * 2 - 1;
-  mouseFallback.set(nx, -ny);
-  if (!state.hasHands) {
-    state.target.lerp(mouseFallback, 0.15);
-  }
-});
-
 function setStatus(text) {
   ui.status.textContent = text;
 }
 
-function setupHands() {
-  if (typeof Hands === "undefined") {
-    setStatus("Hand tracking unavailable — using mouse.");
-    return;
-  }
-
-  const hands = new Hands({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-  });
-
-  hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.6,
-    minTrackingConfidence: 0.6
-  });
-
-  hands.onResults((results) => {
-    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-      state.hasHands = false;
-      return;
-    }
-
-    state.hasHands = true;
-    state.lastHandSeen = performance.now();
-
-    const landmarks = results.multiHandLandmarks[0];
-    const indexTip = landmarks[8];
-    const thumbTip = landmarks[4];
-
-    const nx = (indexTip.x - 0.5) * 2;
-    const ny = (0.5 - indexTip.y) * 2;
-    state.target.set(nx, ny).sub(state.calibrateOffset).clampScalar(-1.1, 1.1);
-
-    const pinchDistance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-    state.boost = pinchDistance < 0.06 ? 1.8 : 1;
-  });
-
-  const camera = new Camera(ui.video, {
-    onFrame: async () => {
-      await hands.send({ image: ui.video });
-    },
-    width: 640,
-    height: 480
-  });
-
-  camera.start();
-  setStatus("Hand tracking ready.");
+function setKeyState(code, isDown) {
+  const down = isDown ? 1 : 0;
+  if (code === "ArrowLeft" || code === "KeyA") state.keys.left = down;
+  if (code === "ArrowRight" || code === "KeyD") state.keys.right = down;
+  if (code === "ArrowUp" || code === "KeyW") state.keys.up = down;
+  if (code === "ArrowDown" || code === "KeyS") state.keys.down = down;
+  if (code === "Space") state.keys.boost = down;
 }
 
-setupHands();
+window.addEventListener("keydown", (event) => {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(event.code)) {
+    event.preventDefault();
+  }
+  setKeyState(event.code, true);
+});
+
+window.addEventListener("keyup", (event) => {
+  setKeyState(event.code, false);
+});
+
+setStatus("Ready. Use arrow keys or WASD.");
 ui.surprise.classList.add("hidden");
 ui.ui.style.display = "grid";
-setStatus("Ready.");
 
 const shipBounds = new THREE.Vector3(2.5, 1.6, 0);
 
 function updateShip(dt) {
-  const targetX = state.target.x * shipBounds.x;
-  const targetY = state.target.y * shipBounds.y;
+  const inputX = state.keys.right - state.keys.left;
+  const inputY = state.keys.up - state.keys.down;
+  state.steer.x = THREE.MathUtils.clamp(state.steer.x + inputX * dt * 4, -1, 1);
+  state.steer.y = THREE.MathUtils.clamp(state.steer.y + inputY * dt * 4, -1, 1);
+  state.steer.multiplyScalar(0.94);
+
+  const targetX = state.steer.x * shipBounds.x;
+  const targetY = state.steer.y * shipBounds.y;
 
   shipGroup.position.x += (targetX - shipGroup.position.x) * (0.08 + dt * 0.6);
   shipGroup.position.y += (targetY - shipGroup.position.y) * (0.08 + dt * 0.6);
 
-  shipGroup.rotation.z = -state.target.x * 0.6;
-  shipGroup.rotation.x = state.target.y * 0.3;
+  shipGroup.rotation.z = -state.steer.x * 0.6;
+  shipGroup.rotation.x = state.steer.y * 0.3;
 }
 
 function updateTunnel(dt) {
@@ -544,6 +509,7 @@ function animate(time) {
   lastTime = time;
 
   if (state.running) {
+    state.boost = state.keys.boost ? 1.7 : 1;
     const slow = state.slowField > 0 ? 0.55 : 1;
     state.distance += state.speed * state.boost * dt * slow;
     state.score += Math.floor(state.speed * state.boost * dt * 6);
